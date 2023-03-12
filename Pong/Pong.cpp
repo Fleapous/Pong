@@ -22,6 +22,12 @@ LRESULT CALLBACK WndProcPaddle(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
 
+int ballX = 20;
+int ballY = 20;
+
+int X_axis = 10;
+int Y_axis = 10;
+
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -160,18 +166,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	{
 		return FALSE;
 	}
-	
-	//SIZE size;
-	//size.cx = 30;
-	//size.cy = 30;
 
-	//HDC hdc = GetDC(hWndBall);
-	//Ellipse(hdc, 30, 30, 30, 30);
-
-	//POINT point;
-	//point.x = 0;
-	//point.y = 0;
-	//UpdateLayeredWindow(hWndBall, NULL, NULL, &size, hdc, &point, RGB(0, 0, 0), 0, ULW_OPAQUE);
 
 	HWND hWndPaddle = CreateWindowW(L"PaddleClass", L"PaddleWindow", WS_CHILD | WS_VISIBLE, 40, 0, 30, 30, hWnd, nullptr, hInstance, nullptr);
 
@@ -229,10 +224,39 @@ LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	{
 	case WM_CREATE:
 	{
-		HRGN reg = CreateEllipticRgn(0, 0, 30, 30);
+		HRGN reg = CreateEllipticRgn(0, 0, 20, 20);
 		SetWindowRgn(hWnd, reg, true);
+
+		SetTimer(hWnd, 50, 250, NULL);
 	}
 	break;
+	case WM_TIMER:
+	{
+		RECT rect;
+		GetWindowRect(hWnd, &rect);
+
+		//Y axis
+		if ((ballY + 10 == 250))
+		{
+			Y_axis = Y_axis * -1;
+
+		}
+		if((ballY  - 10 <= -10))
+		{
+			Y_axis = Y_axis * -1;
+		}
+
+		//X axis
+		if ((ballX + 10 == 460))
+		{
+			X_axis = X_axis * -1;
+		}
+		if ((ballX - 10 == -10))
+		{
+			X_axis = X_axis * -1;
+		}
+		MoveWindow(hWnd, ballX += X_axis, ballY += Y_axis, 20, 20, TRUE);
+	}
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
@@ -268,6 +292,5 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	}
-
 	return static_cast <INT_PTR>(FALSE);
 }
