@@ -1,6 +1,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <string>
+#include <iostream>
+using namespace std;
 
 # define MAX_LOADSTRING 100
 
@@ -22,11 +24,21 @@ LRESULT CALLBACK WndProcPaddle(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
 
+//paddle vars
+HWND paddleHandle;
+
+//ball cordinates
 int ballX = 20;
 int ballY = 20;
 
+// push forces
 int X_axis = 10;
 int Y_axis = 10;
+
+//cursor cords
+int cursor_X = 0;
+int cursor_Y = 0;
+
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -136,7 +148,7 @@ ATOM RegisterClassPaddle(HINSTANCE hInstance)
 	wcex.hInstance = hInstance;
 	wcex.hIcon = nullptr;
 	wcex.hCursor = nullptr;
-	wcex.hbrBackground = (HBRUSH)CreateSolidBrush(RGB(0, 0, 255));
+	wcex.hbrBackground = reinterpret_cast <HBRUSH>(COLOR_ACTIVECAPTION + 1);
 	wcex.lpszMenuName = nullptr;
 	wcex.lpszClassName = L"PaddleClass";
 	wcex.hIconSm = nullptr;
@@ -168,7 +180,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	}
 
 
-	HWND hWndPaddle = CreateWindowW(L"PaddleClass", L"PaddleWindow", WS_CHILD | WS_VISIBLE, 40, 0, 30, 30, hWnd, nullptr, hInstance, nullptr);
+	HWND hWndPaddle = CreateWindowW(L"PaddleClass", L"PaddleWindow", WS_CHILD | WS_VISIBLE, 470, 0, 20, 70, hWnd, nullptr, hInstance, nullptr);
 
 	if (!hWndPaddle)
 	{
@@ -211,6 +223,15 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			clientWidth, clientHeight);
 		SetWindowText(hWnd, s);
 	}
+	break;
+	case WM_MOUSEMOVE:
+	{
+		cursor_X = LOWORD(lParam);
+		cursor_Y = HIWORD(lParam);
+
+		SendMessage(paddleHandle, WM_MOVE, 0, MAKELPARAM(cursor_X, cursor_Y));
+	}
+	break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
@@ -232,8 +253,11 @@ LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	break;
 	case WM_TIMER:
 	{
-		RECT rect;
-		GetWindowRect(hWnd, &rect);
+		// cheking if ball hits the paddle
+		if ((cursor_Y < ballY) && (cursor_Y < ballY + 70) && (ballX == 450))
+		{
+			X_axis = X_axis * -1;
+		}
 
 		//Y axis
 		if ((ballY + 10 == 250))
@@ -247,15 +271,20 @@ LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		}
 
 		//X axis
-		if ((ballX + 10 == 460))
+
+		if (ballX + 10 == 470)
 		{
-			X_axis = X_axis * -1;
+			X_axis *= 0;
+			Y_axis *= 0;
 		}
+
 		if ((ballX - 10 == -10))
 		{
 			X_axis = X_axis * -1;
 		}
+
 		MoveWindow(hWnd, ballX += X_axis, ballY += Y_axis, 20, 20, TRUE);
+
 	}
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
@@ -266,8 +295,13 @@ LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 LRESULT CALLBACK WndProcPaddle(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	paddleHandle = hWnd;
 	switch (message)
 	{
+	case WM_MOVE:
+	{
+		MoveWindow(hWnd, 470, HIWORD(lParam), 20, 70, TRUE);
+	}
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
