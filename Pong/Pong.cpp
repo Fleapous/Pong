@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <string>
 #include <iostream>
+#include "resource.h"
 using namespace std;
 
 # define MAX_LOADSTRING 100
@@ -23,6 +24,9 @@ LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 LRESULT CALLBACK WndProcPaddle(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
+
+//ball vars 
+HWND hWndBall;
 
 //paddle vars
 HWND paddleHandle;
@@ -76,7 +80,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	HACCEL hAccelTable = LoadAccelerators(hInstance, /*MAKEINTRESOURCE(IDC_TUTORIAL)*/ nullptr);
+	HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDR_ACCEL));
 
 
 	MSG msg;
@@ -107,8 +111,8 @@ ATOM RegisterClassMain(HINSTANCE hInstance)
 	wcex.hCursor = nullptr;
 	wcex.hbrBackground = (HBRUSH)CreateSolidBrush(RGB(0, 255, 0));
 	/*wcex.lpszMenuName = MAKEINTRESOURCE(IDC_TUTORIAL);*/
-	wcex.lpszMenuName = nullptr;
-	/*wcex.lpszClassName = MAKEINTRESOURCE(IDC_TUTORIAL);*/
+	wcex.lpszMenuName = MAKEINTRESOURCE(IDC_MENU);
+	//wcex.lpszClassName = 
 	wcex.lpszClassName = szWindowClass;
 	//wcex.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SMALL));
 	wcex.hIconSm = nullptr;
@@ -172,7 +176,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 		return FALSE;
 	}
 
-	HWND hWndBall = CreateWindowW(L"BallClass", L"BallWindow", WS_CHILD | WS_VISIBLE, 0, 0, 30, 30, hWnd, nullptr, hInstance, nullptr);
+	hWndBall = CreateWindowW(L"BallClass", L"BallWindow", WS_CHILD | WS_VISIBLE, 0, 0, 30, 30, hWnd, nullptr, hInstance, nullptr);
 
 	if (!hWndBall)
 	{
@@ -202,6 +206,30 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 	switch (message)
 	{
+	case WM_COMMAND:
+	{
+		int wmId = LOWORD(wParam);
+		switch (wmId)
+		{
+		case IDM_EXIT:
+		{
+			DestroyWindow(hWnd);
+		}
+		break;
+		case IDM_NEWGAME:
+		{
+			X_axis = 10;
+			Y_axis = 10;
+			ballX = 20;
+			ballY = 20;
+			MoveWindow(hWndBall, ballX, ballY, 20, 20, TRUE);
+		}
+		default:
+			return DefWindowProc(hWnd, message, wParam, lParam);
+			break;
+		}
+	}
+
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
@@ -254,6 +282,7 @@ LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_TIMER:
 	{
 		// cheking if ball hits the paddle
+		//rethink there is a problem with the logic
 		if ((cursor_Y < ballY) && (cursor_Y < ballY + 70) && (ballX == 450))
 		{
 			X_axis = X_axis * -1;
