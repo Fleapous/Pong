@@ -26,7 +26,8 @@ LRESULT CALLBACK WndProcPaddle(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
 
-HBRUSH mainWindowBrush;
+HBRUSH mainWindowBrush = CreateSolidBrush(RGB(0, 200, 0));
+
 
 //ball vars 
 HWND hWndBall;
@@ -112,7 +113,7 @@ ATOM RegisterClassMain(HINSTANCE hInstance)
 	/*wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TUTORIAL));*/
 	wcex.hIcon = nullptr;
 	wcex.hCursor = nullptr;
-	wcex.hbrBackground = /*(HBRUSH)CreateSolidBrush(RGB(0, 255, 0))*/ nullptr;
+	wcex.hbrBackground = /*(HBRUSH)CreateSolidBrush(RGB(0, 255, 0))*/ mainWindowBrush;
 	/*wcex.lpszMenuName = MAKEINTRESOURCE(IDC_TUTORIAL);*/
 	wcex.lpszMenuName = MAKEINTRESOURCE(IDC_MENU);
 	//wcex.lpszClassName = 
@@ -267,13 +268,15 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_PAINT:
 	{
 
-		PAINTSTRUCT ps; 
+
+		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
 		RECT rc;
 		GetClientRect(hWnd, &rc);
-
-		FillRect(hdc, &rc, (HBRUSH)mainWindowBrush);
+		FillRect(hdc, &rc, mainWindowBrush);
 		EndPaint(hWnd, &ps);
+
+
 
 		//HBRUSH hBrush = CreateSolidBrush(RGB(255, 0, 0)); // red brush
 	}
