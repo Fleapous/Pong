@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include "resource.h"
+#include <commdlg.h>
 using namespace std;
 
 # define MAX_LOADSTRING 100
@@ -24,6 +25,8 @@ LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 LRESULT CALLBACK WndProcPaddle(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
+
+HBRUSH mainWindowBrush;
 
 //ball vars 
 HWND hWndBall;
@@ -109,7 +112,7 @@ ATOM RegisterClassMain(HINSTANCE hInstance)
 	/*wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TUTORIAL));*/
 	wcex.hIcon = nullptr;
 	wcex.hCursor = nullptr;
-	wcex.hbrBackground = (HBRUSH)CreateSolidBrush(RGB(0, 255, 0));
+	wcex.hbrBackground = /*(HBRUSH)CreateSolidBrush(RGB(0, 255, 0))*/ nullptr;
 	/*wcex.lpszMenuName = MAKEINTRESOURCE(IDC_TUTORIAL);*/
 	wcex.lpszMenuName = MAKEINTRESOURCE(IDC_MENU);
 	//wcex.lpszClassName = 
@@ -225,10 +228,53 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			MoveWindow(hWndBall, ballX, ballY, 20, 20, TRUE);
 		}
 		default:
+		case IDM_CHANGECOLOR:
+		{
+
+			CHOOSECOLOR cc;                 // common dialog box structure 
+			static COLORREF acrCustClr[16]; // array of custom colors
+			static DWORD rgbCurrent;        // initial color selection
+
+			// Initialize CHOOSECOLOR 
+			ZeroMemory(&cc, sizeof(cc));
+			cc.lStructSize = sizeof(cc);
+			cc.hwndOwner = hWnd;
+			cc.lpCustColors = (LPDWORD)acrCustClr;
+			cc.rgbResult = rgbCurrent;
+			cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+
+			if (ChooseColor(&cc) == TRUE)
+			{
+				mainWindowBrush = CreateSolidBrush(cc.rgbResult);
+				rgbCurrent = cc.rgbResult;
+
+			}
+			InvalidateRect(hWnd, NULL, TRUE);
+		}
+		break;
 			return DefWindowProc(hWnd, message, wParam, lParam);
 			break;
 		}
 	}
+	case WM_ERASEBKGND:
+	{
+		return 1;
+	}
+	break;
+	case WM_PAINT:
+	{
+
+		PAINTSTRUCT ps; 
+		HDC hdc = BeginPaint(hWnd, &ps);
+		RECT rc;
+		GetClientRect(hWnd, &rc);
+
+		FillRect(hdc, &rc, (HBRUSH)mainWindowBrush);
+		EndPaint(hWnd, &ps);
+
+		//HBRUSH hBrush = CreateSolidBrush(RGB(255, 0, 0)); // red brush
+	}
+	break;
 
 	case WM_DESTROY:
 		PostQuitMessage(0);
@@ -283,7 +329,7 @@ LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	{
 		// cheking if ball hits the paddle
 		//rethink there is a problem with the logic
-		if ((cursor_Y < ballY) && (cursor_Y < ballY + 70) && (ballX == 450))
+		if ((cursor_Y < ballY) && (ballY < cursor_Y + 70) && (ballX == 450))
 		{
 			X_axis = X_axis * -1;
 		}
