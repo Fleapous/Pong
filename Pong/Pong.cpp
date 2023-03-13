@@ -39,8 +39,8 @@ int ballX = 20;
 int ballY = 20;
 
 // push forces
-int X_axis = 10;
-int Y_axis = 10;
+int X_axis = 1;
+int Y_axis = 1;
 
 //cursor cords
 int cursor_X = 0;
@@ -221,15 +221,17 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		break;
 		case IDM_NEWGAME:
 		{
-			X_axis = 10;
-			Y_axis = 10;
+			X_axis = 1;
+			Y_axis = 1;
 			ballX = 20;
 			ballY = 20;
 			MoveWindow(hWndBall, ballX, ballY, 20, 20, TRUE);
 		}
-		default:
+		break;
 		case IDM_CHANGECOLOR:
 		{
+
+			// mostly taken from docs
 
 			CHOOSECOLOR cc;                 // common dialog box structure 
 			static COLORREF acrCustClr[16]; // array of custom colors
@@ -252,6 +254,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			InvalidateRect(hWnd, NULL, TRUE);
 		}
 		break;
+		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 			break;
 		}
@@ -322,7 +325,7 @@ LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		HRGN reg = CreateEllipticRgn(0, 0, 20, 20);
 		SetWindowRgn(hWnd, reg, true);
 
-		SetTimer(hWnd, 50, 250, NULL);
+		SetTimer(hWnd, 5, 5, NULL);
 	}
 	break;
 	case WM_TIMER:
@@ -335,25 +338,25 @@ LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		}
 
 		//Y axis
-		if ((ballY + 10 == 250))
+		if ((ballY + 1 == 250))
 		{
 			Y_axis = Y_axis * -1;
 
 		}
-		if((ballY  - 10 <= -10))
+		if((ballY  - 1 <= -10))
 		{
 			Y_axis = Y_axis * -1;
 		}
 
 		//X axis
 
-		if (ballX + 10 == 470)
+		if (ballX + 1 == 470)
 		{
 			X_axis *= 0;
 			Y_axis *= 0;
 		}
 
-		if ((ballX - 10 == -10))
+		if ((ballX - 1 == -10))
 		{
 			X_axis = X_axis * -1;
 		}
