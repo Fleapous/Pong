@@ -26,8 +26,9 @@ LRESULT CALLBACK WndProcPaddle(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
 
-HBRUSH mainWindowBrush = CreateSolidBrush(RGB(0, 200, 0));
-
+HBRUSH colorBrush = CreateSolidBrush(RGB(0, 200, 0));
+HBITMAP bitMapBrush = nullptr;
+bool brushTypeFlag = false;
 
 //ball vars 
 HWND hWndBall;
@@ -113,7 +114,7 @@ ATOM RegisterClassMain(HINSTANCE hInstance)
 	/*wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TUTORIAL));*/
 	wcex.hIcon = nullptr;
 	wcex.hCursor = nullptr;
-	wcex.hbrBackground = /*(HBRUSH)CreateSolidBrush(RGB(0, 255, 0))*/ mainWindowBrush;
+	wcex.hbrBackground = /*(HBRUSH)CreateSolidBrush(RGB(0, 255, 0))*/ colorBrush;
 	/*wcex.lpszMenuName = MAKEINTRESOURCE(IDC_TUTORIAL);*/
 	wcex.lpszMenuName = MAKEINTRESOURCE(IDC_MENU);
 	//wcex.lpszClassName = 
@@ -207,6 +208,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	static HBITMAP hBitmap;
 
 	switch (message)
 	{
@@ -229,6 +231,10 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			MoveWindow(hWndBall, ballX, ballY, 20, 20, TRUE);
 		}
 		break;
+		case IDM_TILE:
+		{
+
+		}
 		case IDM_CHANGECOLOR:
 		{
 
@@ -248,11 +254,33 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 			if (ChooseColor(&cc) == TRUE)
 			{
-				mainWindowBrush = CreateSolidBrush(cc.rgbResult);
+				colorBrush = CreateSolidBrush(cc.rgbResult);
 				rgbCurrent = cc.rgbResult;
 
-			}
+			}			
+			brushTypeFlag = false;
 			InvalidateRect(hWnd, NULL, TRUE);
+
+
+		}
+		break;
+		case IDM_BITMAP:
+		{
+			WCHAR szFile[MAX_PATH];
+			OPENFILENAME ofn;
+			ZeroMemory(&ofn, sizeof(OPENFILENAME));
+			ofn.lStructSize = sizeof(OPENFILENAME);
+			ofn.hwndOwner = hWnd;
+			ofn.lpstrFilter = L"Bitmap file\0*.BMP\0";
+			ofn.lpstrFile = szFile;
+			ofn.lpstrFile[0] = '\0';
+			ofn.nMaxFile = MAX_PATH;
+			ofn.nFilterIndex = 1;
+
+			GetOpenFileName(&ofn);
+			bitMapBrush = (HBITMAP)LoadImage(hInst, ofn.lpstrFile, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+
+			brushTypeFlag = true;
 		}
 		break;
 		default:
@@ -267,17 +295,22 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	break;
 	case WM_PAINT:
 	{
-
-
 		PAINTSTRUCT ps;
-		HDC hdc = BeginPaint(hWnd, &ps);
-		RECT rc;
-		GetClientRect(hWnd, &rc);
-		FillRect(hdc, &rc, mainWindowBrush);
-		EndPaint(hWnd, &ps);
+		HDC hdc;
 
+		if (brushTypeFlag)
+		{
 
+		}
+		else
+		{
+			BeginPaint(hWnd, &ps);
+			RECT rc;
+			GetClientRect(hWnd, &rc);
+			FillRect(hdc, &rc, colorBrush);
 
+		}
+			EndPaint(hWnd, &ps);
 		//HBRUSH hBrush = CreateSolidBrush(RGB(255, 0, 0)); // red brush
 	}
 	break;
