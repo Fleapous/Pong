@@ -26,9 +26,11 @@ LRESULT CALLBACK WndProcPaddle(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
 
+//main window vars
 HBRUSH colorBrush = CreateSolidBrush(RGB(0, 200, 0));
 HBITMAP bitMapBrush = nullptr;
 bool brushTypeFlag = false;
+bool bitMode = false;
 
 //ball vars 
 HWND hWndBall;
@@ -233,8 +235,18 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		break;
 		case IDM_TILE:
 		{
-
+			bitMode = true;
+			CheckMenuItem(GetMenu(hWnd), IDM_TILE, MF_CHECKED);
+			CheckMenuItem(GetMenu(hWnd), IDM_STRETCH, MF_UNCHECKED);
 		}
+		break;
+		case IDM_STRETCH:
+		{
+			bitMode = false;
+			CheckMenuItem(GetMenu(hWnd), IDM_TILE, MF_UNCHECKED);
+			CheckMenuItem(GetMenu(hWnd), IDM_STRETCH, MF_CHECKED);
+		}
+		break;
 		case IDM_CHANGECOLOR:
 		{
 
@@ -280,7 +292,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			GetOpenFileName(&ofn);
 			bitMapBrush = (HBITMAP)LoadImage(hInst, ofn.lpstrFile, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
-			brushTypeFlag = true;
+			/*brushTypeFlag = true;*/
 		}
 		break;
 		default:
@@ -304,7 +316,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		}
 		else
 		{
-			BeginPaint(hWnd, &ps);
+			hdc = BeginPaint(hWnd, &ps);
 			RECT rc;
 			GetClientRect(hWnd, &rc);
 			FillRect(hdc, &rc, colorBrush);
