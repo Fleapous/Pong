@@ -25,6 +25,7 @@ ATOM RegisterClassBallTrial(HINSTANCE hInstance);
 BOOL InitInstance(HINSTANCE, int);
 
 LRESULT CALLBACK WndProcMain(HWND, UINT, WPARAM, LPARAM);
+void NewGame(const HWND& hWnd);
 LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK WndProcBallTrail(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 void ballMover(const HWND& hWnd);
@@ -35,8 +36,11 @@ INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
 //main window vars
 HBRUSH colorBrush = CreateSolidBrush(RGB(0, 200, 0));
 HBITMAP bitMapBrush = nullptr;
+HWND hMain;
 bool brushTypeFlag = false;
 bool bitMode = false;
+int leftCounter = 0;
+int rightCounter = 0;
 
 //ball vars 
 HWND hWndBall;
@@ -200,18 +204,18 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	hInst = hInstance;
 	bool tmp;
 
-	HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_EX_LAYERED | WS_OVERLAPPED | WS_EX_OVERLAPPEDWINDOW,
+	hMain = CreateWindowW(szWindowClass, szTitle, WS_EX_LAYERED | WS_OVERLAPPED | WS_EX_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance,
 		nullptr);
 
-	SetWindowLong(hWnd, GWL_EXSTYLE, GetWindowLong(hWnd, GWL_EXSTYLE) | WS_EX_LAYERED);
-	SetLayeredWindowAttributes(hWnd, 0, (255 * 0.8), LWA_ALPHA);
+	SetWindowLong(hMain, GWL_EXSTYLE, GetWindowLong(hMain, GWL_EXSTYLE) | WS_EX_LAYERED);
+	SetLayeredWindowAttributes(hMain, 0, (255 * 0.8), LWA_ALPHA);
 
-	if (!hWnd) {
+	if (!hMain) {
 		return FALSE;
 	}
 
-	hWndBall = CreateWindowW(L"BallClass", L"BallWindow", WS_CHILD | WS_VISIBLE, 0, 0, 30, 30, hWnd, nullptr, hInstance, nullptr);
+	hWndBall = CreateWindowW(L"BallClass", L"BallWindow", WS_CHILD | WS_VISIBLE, 0, 0, 30, 30, hMain, nullptr, hInstance, nullptr);
 
 	if (!hWndBall)
 	{
@@ -219,18 +223,18 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	}
 
 
-	HWND hWndPaddle = CreateWindowW(L"PaddleClass", L"PaddleWindow", WS_CHILD | WS_VISIBLE, 470, 0, 20, 70, hWnd, nullptr, hInstance, nullptr);
+	HWND hWndPaddle = CreateWindowW(L"PaddleClass", L"PaddleWindow", WS_CHILD | WS_VISIBLE, 470, 0, 20, 70, hMain, nullptr, hInstance, nullptr);
 
 	if (!hWndPaddle)
 	{
 		return FALSE;
 	}
 
-	ShowWindow(hWnd, nCmdShow);
+	ShowWindow(hMain, nCmdShow);
 	ShowWindow(hWndBall, nCmdShow);
 	ShowWindow(hWndPaddle, nCmdShow);
 
-	UpdateWindow(hWnd);
+	UpdateWindow(hMain);
 	UpdateWindow(hWndBall);
 	UpdateWindow(hWndPaddle);
 	return TRUE;
@@ -254,11 +258,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		break;
 		case IDM_NEWGAME:
 		{
-			X_axis = 1;
-			Y_axis = 1;
-			ballX = 20;
-			ballY = 20;
-			MoveWindow(hWndBall, ballX, ballY, 20, 20, TRUE);
+			NewGame(hWnd);
 		}
 		break;
 		case IDM_TILE:
@@ -277,6 +277,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		break;
 		case IDM_CHANGECOLOR:
 		{
+
 
 			// mostly taken from docs
 
@@ -301,7 +302,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			brushTypeFlag = false;
 			InvalidateRect(hWnd, NULL, TRUE);
 
-
+			NewGame(hWnd);
 		}
 		break;
 		case IDM_BITMAP:
@@ -347,8 +348,21 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	break;
 	case WM_PAINT:
 	{
+		//wchar_t buffer1[11];
+		//wchar_t buffer2[11];
+		//wchar_t buffer3[11];
+		//wchar_t buffer4[11];
+
+		wchar_t leftCounterBuff[21];
+		wchar_t rightCounterBuff[21];
+
+
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
+
+		HFONT hFont = CreateFont(40, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+			OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, FF_DONTCARE, L"Arial");
+		HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
 
 		if (brushTypeFlag)
 		{
@@ -369,9 +383,39 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			SetTextColor(hdc, oposite);
 			SetBkColor(hdc, bcgrndColor);
 
-			TextOut(hdc, 100, 100, L"HELLO!!!!", 9);
+
+			_itow_s(leftCounter, leftCounterBuff, sizeof(leftCounterBuff) / sizeof(wchar_t), 20);
+			_itow_s(rightCounter, rightCounterBuff, sizeof(rightCounterBuff) / sizeof(wchar_t), 20);
+
+			leftCounterBuff[wcslen(leftCounterBuff)] = L'\0';
+			rightCounterBuff[wcslen(rightCounterBuff)] = L'\0';
+
+
+
+
+			TextOutW(hdc, 121, 60, leftCounterBuff, wcslen(leftCounterBuff));
+			TextOutW(hdc, 363, 60, rightCounterBuff, wcslen(rightCounterBuff));
+
+			
+			//for aligning the counters
+			//_itow_s(rc.left, buffer1, sizeof(buffer1) / sizeof(wchar_t), 10);
+			//_itow_s(rc.right, buffer2, sizeof(buffer2) / sizeof(wchar_t), 10);
+			//_itow_s(rc.top, buffer3, sizeof(buffer3) / sizeof(wchar_t), 10);
+			//_itow_s(rc.bottom, buffer4, sizeof(buffer4) / sizeof(wchar_t), 10);
+
+			//buffer1[wcslen(buffer1)] = L'\0';
+			//buffer2[wcslen(buffer2)] = L'\0';
+			//buffer3[wcslen(buffer3)] = L'\0';
+			//buffer4[wcslen(buffer4)] = L'\0';
+
+			//TextOutW(hdc, 100, 200, buffer1, wcslen(buffer1));
+			//TextOutW(hdc, 200, 200, buffer2, wcslen(buffer2));
+			//TextOutW(hdc, 150, 200, buffer3, wcslen(buffer3));
+			//TextOutW(hdc, 250, 200, buffer4, wcslen(buffer4));
 
 		}
+		SelectObject(hdc, hOldFont);
+		DeleteObject(hFont);
 			EndPaint(hWnd, &ps);
 		//HBRUSH hBrush = CreateSolidBrush(RGB(255, 0, 0)); // red brush
 	}
@@ -412,6 +456,18 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	}
 
 	return 0;
+}
+
+void NewGame(const HWND& hWnd)
+{
+	X_axis = 1;
+	Y_axis = 1;
+	ballX = 20;
+	ballY = 20;
+	leftCounter = 0;
+	rightCounter = 0;
+	MoveWindow(hWndBall, ballX, ballY, 20, 20, TRUE);
+	InvalidateRect(hWnd, NULL, TRUE);
 }
 
 LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
@@ -537,6 +593,8 @@ void ballMover(const HWND& hWnd)
 	if ((cursor_Y < ballY) && (ballY < cursor_Y + 70) && (ballX == 450))
 	{
 		X_axis = X_axis * -1;
+		rightCounter++;
+		InvalidateRect(hMain, NULL, TRUE);
 	}
 
 	//Y axis
@@ -554,8 +612,13 @@ void ballMover(const HWND& hWnd)
 
 	if (ballX + 1 == 470)
 	{
-		X_axis *= 0;
-		Y_axis *= 0;
+		leftCounter++;
+		X_axis = 1;
+		Y_axis = 1;
+		ballX = 20;
+		ballY = 20;
+		MoveWindow(hWndBall, ballX, ballY, 20, 20, TRUE);
+		InvalidateRect(hMain, NULL, TRUE);
 	}
 
 	if ((ballX - 1 == -10))
