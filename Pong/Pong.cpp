@@ -266,6 +266,8 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			bitMode = true;
 			CheckMenuItem(GetMenu(hWnd), IDM_TILE, MF_CHECKED);
 			CheckMenuItem(GetMenu(hWnd), IDM_STRETCH, MF_UNCHECKED);
+
+			InvalidateRect(hWnd, NULL, true);
 		}
 		break;
 		case IDM_STRETCH:
@@ -273,6 +275,8 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			bitMode = false;
 			CheckMenuItem(GetMenu(hWnd), IDM_TILE, MF_UNCHECKED);
 			CheckMenuItem(GetMenu(hWnd), IDM_STRETCH, MF_CHECKED);
+
+			InvalidateRect(hWnd, NULL, true);
 		}
 		break;
 		case IDM_CHANGECOLOR:
@@ -298,7 +302,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 				colorBrush = CreateSolidBrush(cc.rgbResult);
 				rgbCurrent = cc.rgbResult;
 
-			}			
+			}
 			brushTypeFlag = false;
 			InvalidateRect(hWnd, NULL, TRUE);
 
@@ -307,7 +311,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		break;
 		case IDM_BITMAP:
 		{
-			WCHAR szFile[MAX_PATH];
+			WCHAR szFile[100];
 			OPENFILENAME ofn;
 			ZeroMemory(&ofn, sizeof(OPENFILENAME));
 			ofn.lStructSize = sizeof(OPENFILENAME);
@@ -315,13 +319,20 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			ofn.lpstrFilter = L"Bitmap file\0*.BMP\0";
 			ofn.lpstrFile = szFile;
 			ofn.lpstrFile[0] = '\0';
-			ofn.nMaxFile = MAX_PATH;
+			ofn.nMaxFile = 100;
 			ofn.nFilterIndex = 1;
 
-			GetOpenFileName(&ofn);
-			bitMapBrush = (HBITMAP)LoadImage(hInst, ofn.lpstrFile, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+			if(GetOpenFileName(&ofn))
+			{
+				bitMapBrush = (HBITMAP)LoadImage(hInst, ofn.lpstrFile, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
-			/*brushTypeFlag = true;*/
+			}
+			
+			InvalidateRect(hWnd, NULL, true);
+			InvalidateRect(hWndBall, NULL, true);
+			InvalidateRect(paddleHandle, NULL, true);
+			brushTypeFlag = true;
+			NewGame(hWnd);
 		}
 		break;
 		default:
@@ -359,6 +370,9 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
+		HDC hdcBit;
+		HGDIOBJ oldBitmap;
+		BITMAP bitmap;
 
 		HFONT hFont = CreateFont(40, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
 			OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, FF_DONTCARE, L"Arial");
@@ -366,6 +380,57 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		if (brushTypeFlag)
 		{
+			//disable them too
+			EnableMenuItem(GetMenu(hWnd), IDM_STRETCH, MF_ENABLED);
+			EnableMenuItem(GetMenu(hWnd), IDM_TILE, MF_ENABLED);
+
+			hdcBit = CreateCompatibleDC(hdc);
+			oldBitmap = SelectObject(hdcBit, bitMapBrush);
+
+			GetObject(bitMapBrush, sizeof(bitmap), &bitmap);
+			BitBlt(hdc, 0, 0, bitmap.bmWidth, bitmap.bmHeight, hdcBit, 0, 0, SRCCOPY);
+
+			if (!bitMode)
+			{
+				StretchBlt(hdc, 0, 0, 500, 350, hdcBit, 0, 0, bitmap.bmWidth, bitmap.bmHeight, SRCCOPY);
+			}
+			else
+			{
+				for (int i = 0; i < 500; i += bitmap.bmWidth)
+				{
+					for (int j = 0; j < 300; j += bitmap.bmHeight)
+					{
+						BitBlt(hdc, i, j, bitmap.bmWidth, bitmap.bmWidth, hdcBit, 0, 0, SRCCOPY);
+					}
+				}
+			}
+			SelectObject(hdcBit, oldBitmap);
+			DeleteDC(hdcBit);
+
+
+
+			//make bacground transperant
+
+			LOGBRUSH lb;
+			GetObject(colorBrush, sizeof(HBRUSH), &lb);
+
+			COLORREF oposite = RGB(255 - GetRValue(lb.lbColor), 255 - GetGValue(lb.lbColor), 255 - GetBValue(lb.lbColor));
+			SetBkMode(hdc, TRANSPARENT);
+			SetTextColor(hdc, oposite);
+			
+
+
+			_itow_s(leftCounter, leftCounterBuff, sizeof(leftCounterBuff) / sizeof(wchar_t), 20);
+			_itow_s(rightCounter, rightCounterBuff, sizeof(rightCounterBuff) / sizeof(wchar_t), 20);
+
+			leftCounterBuff[wcslen(leftCounterBuff)] = L'\0';
+			rightCounterBuff[wcslen(rightCounterBuff)] = L'\0';
+
+
+
+
+			TextOutW(hdc, 121, 60, leftCounterBuff, wcslen(leftCounterBuff));
+			TextOutW(hdc, 363, 60, rightCounterBuff, wcslen(rightCounterBuff));
 
 
 		}
@@ -398,6 +463,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 			
 			//for aligning the counters
+			// 
 			//_itow_s(rc.left, buffer1, sizeof(buffer1) / sizeof(wchar_t), 10);
 			//_itow_s(rc.right, buffer2, sizeof(buffer2) / sizeof(wchar_t), 10);
 			//_itow_s(rc.top, buffer3, sizeof(buffer3) / sizeof(wchar_t), 10);
