@@ -4,9 +4,12 @@
 #include <iostream>
 #include "resource.h"
 #include <commdlg.h>
+#include <vector>
 using namespace std;
 
 # define MAX_LOADSTRING 100
+#define CHILD_WINDOW_ID_START 0x0500
+
 
 HINSTANCE hInst;
 WCHAR szTitle[MAX_LOADSTRING];
@@ -17,11 +20,14 @@ WCHAR BallClassName[MAX_LOADSTRING];
 ATOM RegisterClassMain(HINSTANCE hInstance);
 ATOM RegisterClassBall(HINSTANCE hInstance);
 ATOM RegisterClassPaddle(HINSTANCE hInstance);
+ATOM RegisterClassBallTrial(HINSTANCE hInstance);
 
 BOOL InitInstance(HINSTANCE, int);
 
 LRESULT CALLBACK WndProcMain(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+LRESULT CALLBACK WndProcBallTrail(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+void ballMover(const HWND& hWnd);
 LRESULT CALLBACK WndProcPaddle(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
@@ -34,6 +40,7 @@ bool bitMode = false;
 
 //ball vars 
 HWND hWndBall;
+void ballMover(const HWND& hWnd);
 
 //paddle vars
 HWND paddleHandle;
@@ -81,6 +88,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	RegisterClassMain(hInstance);
 	RegisterClassBall(hInstance);
 	RegisterClassPaddle(hInstance);
+	RegisterClassBallTrial(hInstance);
 
 	if (!InitInstance(hInstance, nCmdShow))
 	{
@@ -162,6 +170,26 @@ ATOM RegisterClassPaddle(HINSTANCE hInstance)
 	wcex.hbrBackground = reinterpret_cast <HBRUSH>(COLOR_ACTIVECAPTION + 1);
 	wcex.lpszMenuName = nullptr;
 	wcex.lpszClassName = L"PaddleClass";
+	wcex.hIconSm = nullptr;
+
+	return RegisterClassExW(&wcex);
+}
+
+ATOM RegisterClassBallTrial(HINSTANCE hInstance)
+{
+	WNDCLASSEXW wcex;
+	wcex.cbSize = sizeof(WNDCLASSEXW);
+
+	wcex.style = CS_HREDRAW | CS_VREDRAW;
+	wcex.lpfnWndProc = WndProcBallTrail;
+	wcex.cbClsExtra = 0;
+	wcex.cbWndExtra = 0;
+	wcex.hInstance = hInstance;
+	wcex.hIcon = nullptr;
+	wcex.hCursor = nullptr;
+	wcex.hbrBackground = (HBRUSH)CreateSolidBrush(RGB(255, 0, 0));
+	wcex.lpszMenuName = nullptr;
+	wcex.lpszClassName = L"BallTrailClass";
 	wcex.hIconSm = nullptr;
 
 	return RegisterClassExW(&wcex);
@@ -300,6 +328,18 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			break;
 		}
 	}
+	case WM_CREATE:
+	{
+		SetTimer(hWnd, 200, 200, NULL);
+	}
+	break;
+	case WM_TIMER:
+	{
+		HWND tmp = CreateWindowW(L"BallTrailClass", nullptr, WS_CHILD | WS_VISIBLE, ballX, ballY, 20, 20, hWnd, nullptr, nullptr, nullptr);
+
+		ShowWindow(tmp, SW_SHOW);
+		UpdateWindow(tmp);
+	}
 	case WM_ERASEBKGND:
 	{
 		return 1;
@@ -312,6 +352,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		if (brushTypeFlag)
 		{
+
 
 		}
 		else
@@ -378,44 +419,68 @@ LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	break;
 	case WM_TIMER:
 	{
-		// cheking if ball hits the paddle
-		//rethink there is a problem with the logic
-		if ((cursor_Y < ballY) && (ballY < cursor_Y + 70) && (ballX == 450))
-		{
-			X_axis = X_axis * -1;
-		}
-
-		//Y axis
-		if ((ballY + 1 == 250))
-		{
-			Y_axis = Y_axis * -1;
-
-		}
-		if((ballY  - 1 <= -10))
-		{
-			Y_axis = Y_axis * -1;
-		}
-
-		//X axis
-
-		if (ballX + 1 == 470)
-		{
-			X_axis *= 0;
-			Y_axis *= 0;
-		}
-
-		if ((ballX - 1 == -10))
-		{
-			X_axis = X_axis * -1;
-		}
-
-		MoveWindow(hWnd, ballX += X_axis, ballY += Y_axis, 20, 20, TRUE);
+		ballMover(hWnd);
 
 	}
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 
+	return 0;
+}
+
+LRESULT CALLBACK WndProcBallTrail(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	//dunno why i have the rect xd
+	static int sizeX = 20;
+	static int sizeY = 20;
+	switch(message)
+	{
+	case WM_CREATE:
+	{
+		//LONG_PTR id = CHILD_WINDOW_ID_START + GetTickCount();
+		//SetWindowLongPtr(hWnd, GWLP_USERDATA, id);
+
+		HRGN reg = CreateEllipticRgn(0, 0, 20, 20);
+		SetWindowRgn(hWnd, reg, true);
+
+		SetTimer(hWnd, 50, 350, NULL);
+
+	}
+	break;
+
+	case WM_TIMER:
+	{
+
+		RECT rect;
+		GetClientRect(hWnd, &rect);
+		int newWidth = rect.right - 1; // decrease the width by 10 pixels
+		int newHeight = rect.bottom - 1; // decrease the height by 10 pixels
+		SetWindowPos(hWnd, NULL, ballX, ballY, newWidth, newHeight, SWP_NOMOVE | SWP_NOZORDER);
+
+
+
+		//RECT rect; 
+		//GetClientRect(hWnd, &rect);
+		//
+		//HRGN reg = CreateEllipticRgn(ballX, ballY, rect.right - 1, rect.bottom - 1);
+		//SetWindowRgn(hWnd, reg, true);
+
+		/*SetWindowPos(hWnd, NULL, ballX, ballY, sizeX--, sizeY--, SWP_NOZORDER | SWP_NOMOVE);*/
+		if (sizeX == 1) {
+			
+		}
+		
+	}
+	break;
+	case WM_DESTROY:
+	{
+		PostQuitMessage(0);
+	}
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	
 	return 0;
 }
 
@@ -453,4 +518,41 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	}
 	return static_cast <INT_PTR>(FALSE);
+}
+
+void ballMover(const HWND& hWnd)
+{
+
+	// cheking if ball hits the paddle
+	//rethink there is a problem with the logic
+	if ((cursor_Y < ballY) && (ballY < cursor_Y + 70) && (ballX == 450))
+	{
+		X_axis = X_axis * -1;
+	}
+
+	//Y axis
+	if ((ballY + 1 == 250))
+	{
+		Y_axis = Y_axis * -1;
+
+	}
+	if ((ballY - 1 <= -10))
+	{
+		Y_axis = Y_axis * -1;
+	}
+
+	//X axis
+
+	if (ballX + 1 == 470)
+	{
+		X_axis *= 0;
+		Y_axis *= 0;
+	}
+
+	if ((ballX - 1 == -10))
+	{
+		X_axis = X_axis * -1;
+	}
+
+	MoveWindow(hWnd, ballX += X_axis, ballY += Y_axis, 20, 20, TRUE);
 }
