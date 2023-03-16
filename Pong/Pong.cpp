@@ -348,7 +348,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_PAINT:
 	{
 		PAINTSTRUCT ps;
-		HDC hdc;
+		HDC hdc = BeginPaint(hWnd, &ps);
 
 		if (brushTypeFlag)
 		{
@@ -357,10 +357,19 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		}
 		else
 		{
-			hdc = BeginPaint(hWnd, &ps);
 			RECT rc;
 			GetClientRect(hWnd, &rc);
 			FillRect(hdc, &rc, colorBrush);
+
+			LOGBRUSH lb;
+			GetObject(colorBrush, sizeof(HBRUSH), &lb);
+
+			COLORREF oposite = RGB(255 - GetRValue(lb.lbColor), 255 - GetGValue(lb.lbColor), 255 - GetBValue(lb.lbColor));
+			COLORREF bcgrndColor = RGB(GetRValue(lb.lbColor), GetGValue(lb.lbColor), GetBValue(lb.lbColor));
+			SetTextColor(hdc, oposite);
+			SetBkColor(hdc, bcgrndColor);
+
+			TextOut(hdc, 100, 100, L"HELLO!!!!", 9);
 
 		}
 			EndPaint(hWnd, &ps);
