@@ -8,7 +8,6 @@
 using namespace std;
 
 # define MAX_LOADSTRING 100
-#define CHILD_WINDOW_ID_START 0x0500
 
 
 HINSTANCE hInst;
@@ -41,6 +40,11 @@ bool brushTypeFlag = false;
 bool bitMode = false;
 int leftCounter = 0;
 int rightCounter = 0;
+struct trail{
+	HWND handle;
+	int timeToDie;
+}bTrail;
+vector<trail> ballTrail;
 
 //ball vars 
 HWND hWndBall;
@@ -54,8 +58,8 @@ int ballX = 20;
 int ballY = 20;
 
 // push forces
-int X_axis = 1;
-int Y_axis = 1;
+int X_axis = 10;
+int Y_axis = 10;
 
 //cursor cords
 int cursor_X = 0;
@@ -251,6 +255,11 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		int wmId = LOWORD(wParam);
 		switch (wmId)
 		{
+		case IDM_ABOUT:
+		{
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUT), hWnd, About);
+		}
+		break;
 		case IDM_EXIT:
 		{
 			DestroyWindow(hWnd);
@@ -342,12 +351,15 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	}
 	case WM_CREATE:
 	{
-		SetTimer(hWnd, 200, 200, NULL);
+		SetTimer(hWnd, 200, 70, NULL);
 	}
 	break;
 	case WM_TIMER:
 	{
 		HWND tmp = CreateWindowW(L"BallTrailClass", nullptr, WS_CHILD | WS_VISIBLE, ballX, ballY, 20, 20, hWnd, nullptr, nullptr, nullptr);
+		bTrail.handle = tmp;
+		bTrail.timeToDie = 200;
+		ballTrail.push_back(bTrail);
 
 		ShowWindow(tmp, SW_SHOW);
 		UpdateWindow(tmp);
@@ -381,6 +393,8 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		if (brushTypeFlag)
 		{
 			//disable them too
+
+			//re think the tile 
 			EnableMenuItem(GetMenu(hWnd), IDM_STRETCH, MF_ENABLED);
 			EnableMenuItem(GetMenu(hWnd), IDM_TILE, MF_ENABLED);
 
@@ -462,8 +476,8 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			TextOutW(hdc, 363, 60, rightCounterBuff, wcslen(rightCounterBuff));
 
 			
-			//for aligning the counters
-			// 
+			/*for aligning the counters*/
+			 
 			//_itow_s(rc.left, buffer1, sizeof(buffer1) / sizeof(wchar_t), 10);
 			//_itow_s(rc.right, buffer2, sizeof(buffer2) / sizeof(wchar_t), 10);
 			//_itow_s(rc.top, buffer3, sizeof(buffer3) / sizeof(wchar_t), 10);
@@ -524,18 +538,6 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	return 0;
 }
 
-void NewGame(const HWND& hWnd)
-{
-	X_axis = 1;
-	Y_axis = 1;
-	ballX = 20;
-	ballY = 20;
-	leftCounter = 0;
-	rightCounter = 0;
-	MoveWindow(hWndBall, ballX, ballY, 20, 20, TRUE);
-	InvalidateRect(hWnd, NULL, TRUE);
-}
-
 LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 {
 	switch (message) 
@@ -545,7 +547,7 @@ LRESULT CALLBACK WndProcBall(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		HRGN reg = CreateEllipticRgn(0, 0, 20, 20);
 		SetWindowRgn(hWnd, reg, true);
 
-		SetTimer(hWnd, 5, 5, NULL);
+		SetTimer(hWnd, 50, 50, NULL);
 	}
 	break;
 	case WM_TIMER:
@@ -575,7 +577,7 @@ LRESULT CALLBACK WndProcBallTrail(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 		HRGN reg = CreateEllipticRgn(0, 0, 20, 20);
 		SetWindowRgn(hWnd, reg, true);
 
-		SetTimer(hWnd, 50, 350, NULL);
+		SetTimer(hWnd, 50, 100, NULL);
 
 	}
 	break;
@@ -585,11 +587,22 @@ LRESULT CALLBACK WndProcBallTrail(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 
 		RECT rect;
 		GetClientRect(hWnd, &rect);
-		int newWidth = rect.right - 1; // decrease the width by 10 pixels
-		int newHeight = rect.bottom - 1; // decrease the height by 10 pixels
+
+		int newWidth = rect.right - 5;
+		int newHeight = rect.bottom - 5;
 		SetWindowPos(hWnd, NULL, ballX, ballY, newWidth, newHeight, SWP_NOMOVE | SWP_NOZORDER);
 
-
+		//HRGN reg = CreateEllipticRgn(0, 0, 20, 20);
+		//SetWindowRgn(hWnd, reg, true);
+	
+		for (int i = 0; i < size(ballTrail); i++)
+		{
+			ballTrail[i].timeToDie--;
+			if (ballTrail[i].timeToDie == 0)
+			{
+				DestroyWindow(ballTrail[i].handle);
+			}
+		}
 
 		//RECT rect; 
 		//GetClientRect(hWnd, &rect);
@@ -604,10 +617,6 @@ LRESULT CALLBACK WndProcBallTrail(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 		
 	}
 	break;
-	case WM_DESTROY:
-	{
-		PostQuitMessage(0);
-	}
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
@@ -622,7 +631,12 @@ LRESULT CALLBACK WndProcPaddle(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 	{
 	case WM_MOVE:
 	{
-		MoveWindow(hWnd, 470, HIWORD(lParam), 20, 70, TRUE);
+		if (!(HIWORD(lParam) > 180))
+			MoveWindow(hWnd, 470, HIWORD(lParam), 20, 70, TRUE);
+		else
+		{
+			MoveWindow(hWnd, 470, 180, 20, 70, TRUE);
+		}
 	}
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
@@ -653,6 +667,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 void ballMover(const HWND& hWnd)
 {
+	int Force = 20;
 
 	// cheking if ball hits the paddle
 	//rethink there is a problem with the logic
@@ -664,33 +679,45 @@ void ballMover(const HWND& hWnd)
 	}
 
 	//Y axis
-	if ((ballY + 1 == 250))
+	if ((ballY + 10 == 230))
 	{
 		Y_axis = Y_axis * -1;
 
 	}
-	if ((ballY - 1 <= -10))
+	if ((ballY - 10 <= -10))
 	{
 		Y_axis = Y_axis * -1;
 	}
 
 	//X axis
 
-	if (ballX + 1 == 470)
+	if (ballX + 10 == 470)
 	{
 		leftCounter++;
-		X_axis = 1;
-		Y_axis = 1;
+		X_axis = 10;
+		Y_axis = 10;
 		ballX = 20;
 		ballY = 20;
 		MoveWindow(hWndBall, ballX, ballY, 20, 20, TRUE);
 		InvalidateRect(hMain, NULL, TRUE);
 	}
 
-	if ((ballX - 1 == -10))
+	if ((ballX - 10 == -10))
 	{
 		X_axis = X_axis * -1;
 	}
 
 	MoveWindow(hWnd, ballX += X_axis, ballY += Y_axis, 20, 20, TRUE);
+}
+
+void NewGame(const HWND& hWnd)
+{
+	X_axis = 10;
+	Y_axis = 10;
+	ballX = 20;
+	ballY = 20;
+	leftCounter = 0;
+	rightCounter = 0;
+	MoveWindow(hWndBall, ballX, ballY, 20, 20, TRUE);
+	InvalidateRect(hWnd, NULL, TRUE);
 }
