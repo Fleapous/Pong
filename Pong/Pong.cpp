@@ -130,7 +130,7 @@ ATOM RegisterClassMain(HINSTANCE hInstance)
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
 	/*wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_TUTORIAL));*/
-	wcex.hIcon = nullptr;
+	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
 	wcex.hCursor = nullptr;
 	wcex.hbrBackground = /*(HBRUSH)CreateSolidBrush(RGB(0, 255, 0))*/ colorBrush;
 	/*wcex.lpszMenuName = MAKEINTRESOURCE(IDC_TUTORIAL);*/
@@ -138,7 +138,7 @@ ATOM RegisterClassMain(HINSTANCE hInstance)
 	//wcex.lpszClassName = 
 	wcex.lpszClassName = szWindowClass;
 	//wcex.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SMALL));
-	wcex.hIconSm = nullptr;
+	wcex.hIconSm = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
 
 	return RegisterClassExW(&wcex);
 }
@@ -352,6 +352,9 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_CREATE:
 	{
 		SetTimer(hWnd, 200, 70, NULL);
+
+		EnableMenuItem(GetMenu(hWnd), IDM_STRETCH, MF_DISABLED);
+		EnableMenuItem(GetMenu(hWnd), IDM_TILE, MF_DISABLED);
 	}
 	break;
 	case WM_TIMER:
@@ -382,7 +385,7 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
-		HDC hdcBit;
+		HDC memHdc;
 		HGDIOBJ oldBitmap;
 		BITMAP bitmap;
 
@@ -398,28 +401,29 @@ LRESULT CALLBACK WndProcMain(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			EnableMenuItem(GetMenu(hWnd), IDM_STRETCH, MF_ENABLED);
 			EnableMenuItem(GetMenu(hWnd), IDM_TILE, MF_ENABLED);
 
-			hdcBit = CreateCompatibleDC(hdc);
-			oldBitmap = SelectObject(hdcBit, bitMapBrush);
+			memHdc = CreateCompatibleDC(hdc);
+			oldBitmap = SelectObject(memHdc, bitMapBrush);
 
 			GetObject(bitMapBrush, sizeof(bitmap), &bitmap);
-			BitBlt(hdc, 0, 0, bitmap.bmWidth, bitmap.bmHeight, hdcBit, 0, 0, SRCCOPY);
+			BitBlt(hdc, 0, 0, bitmap.bmWidth, bitmap.bmHeight, memHdc, 0, 0, SRCCOPY);
 
 			if (!bitMode)
 			{
-				StretchBlt(hdc, 0, 0, 500, 350, hdcBit, 0, 0, bitmap.bmWidth, bitmap.bmHeight, SRCCOPY);
+				StretchBlt(hdc, 0, 0, 500, 280, memHdc, 0, 0, bitmap.bmWidth, bitmap.bmHeight, SRCCOPY);
 			}
 			else
 			{
 				for (int i = 0; i < 500; i += bitmap.bmWidth)
 				{
+
 					for (int j = 0; j < 300; j += bitmap.bmHeight)
 					{
-						BitBlt(hdc, i, j, bitmap.bmWidth, bitmap.bmWidth, hdcBit, 0, 0, SRCCOPY);
+						BitBlt(hdc, i, j, bitmap.bmWidth, bitmap.bmWidth, memHdc, 0, 0, SRCCOPY);
 					}
 				}
 			}
-			SelectObject(hdcBit, oldBitmap);
-			DeleteDC(hdcBit);
+			SelectObject(memHdc, oldBitmap);
+			DeleteDC(memHdc);
 
 
 
